@@ -1,4 +1,5 @@
 import useQuery from "../api/useQuery";
+import { useAuth } from "../auth/AuthContext";
 
 const resource = "/activities";
 
@@ -38,11 +39,29 @@ function ActivityList({ data }) {
     if (!data) {
         console.error("Failed sanity check - undefined data");
     }
-    const listItems = data.map((elem) => <li key={elem.name}>{elem.name}</li>);
     return (
         <>
             <h1>Activities</h1>
-            <ul>{listItems}</ul>
+            <ul>
+                {data.map((elem) => (
+                    <ActivityListItem
+                        key={elem.name}
+                        name={elem.name}
+                        onDelete={() => console.log("I've been deleted!")}
+                    />
+                ))}
+            </ul>
+        </>
+    );
+}
+
+function ActivityListItem({ name, onDelete }) {
+    const { token } = useAuth();
+    const isAuthorized = token;
+    return (
+        <>
+            <p>{name}</p>
+            {isAuthorized && <button onClick={onDelete}>Delete</button>}
         </>
     );
 }

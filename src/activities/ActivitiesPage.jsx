@@ -1,20 +1,27 @@
+import useMutation from "../api/useMutation";
 import useQuery from "../api/useQuery";
 import { useAuth } from "../auth/AuthContext";
+import TryDelete from "../mutations/tryDelete";
 
 const resource = "/activities";
-
+const tag = "COMMON";
 export default function ActivitiesPage() {
-    const result = useQuery(resource);
-    if (result.loading) {
+    const { loading, error, data } = useQuery(resource, tag);
+    if (loading) {
         return <Loading />;
     }
-    if (result.error) {
-        return <Error error={result.error} />;
+    if (error) {
+        return <Error error={error} />;
     }
-    if (!result.data) {
+    if (!data) {
         return <NoData />;
     }
-    return <ActivityList data={result.data} />;
+    return (
+        <>
+            <ActivityList data={data} />
+            <AddActivityForm />
+        </>
+    );
 }
 
 function Loading() {
@@ -45,9 +52,9 @@ function ActivityList({ data }) {
             <ul>
                 {data.map((elem) => (
                     <ActivityListItem
-                        key={elem.name}
+                        key={elem.id}
+                        id={elem.id}
                         name={elem.name}
-                        onDelete={() => console.log("I've been deleted!")}
                     />
                 ))}
             </ul>
@@ -55,13 +62,22 @@ function ActivityList({ data }) {
     );
 }
 
-function ActivityListItem({ name, onDelete }) {
+function ActivityListItem({ name, id }) {
     const { token } = useAuth();
     const isAuthorized = token;
+    const { mutate, error } = useMutation("DELETE", `/${resource}/${id}`, [
+        tag,
+    ]);
+    const tryDelete = new TryDelete({ deleteFunc: mutate });
+
     return (
         <>
             <p>{name}</p>
-            {isAuthorized && <button onClick={onDelete}>Delete</button>}
+            {isAuthorized && (
+                <button onClick={async () => await tryDelete.runAsync()}>
+                    {error ?? "delete"}
+                </button>
+            )}
         </>
     );
 }

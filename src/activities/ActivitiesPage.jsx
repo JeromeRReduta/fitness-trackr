@@ -1,12 +1,15 @@
 import useMutation from "../api/useMutation";
 import useQuery from "../api/useQuery";
 import { useAuth } from "../auth/AuthContext";
+import TryAdd from "../mutations/TryAdd";
 import TryDelete from "../mutations/tryDelete";
 
 const resource = "/activities";
-const tag = "COMMON";
+const tag = "ACTIVITY";
 export default function ActivitiesPage() {
     const { loading, error, data } = useQuery(resource, tag);
+    const { token } = useAuth();
+    const isAuthorized = token != null && token != undefined;
     if (loading) {
         return <Loading />;
     }
@@ -19,7 +22,7 @@ export default function ActivitiesPage() {
     return (
         <>
             <ActivityList data={data} />
-            <AddActivityForm />
+            {isAuthorized && <AddActivityForm />}
         </>
     );
 }
@@ -65,9 +68,7 @@ function ActivityList({ data }) {
 function ActivityListItem({ name, id }) {
     const { token } = useAuth();
     const isAuthorized = token;
-    const { mutate, error } = useMutation("DELETE", `/${resource}/${id}`, [
-        tag,
-    ]);
+    const { mutate, error } = useMutation("DELETE", `${resource}/${id}`, [tag]);
     const tryDelete = new TryDelete({ deleteFunc: mutate });
 
     return (
@@ -79,5 +80,30 @@ function ActivityListItem({ name, id }) {
                 </button>
             )}
         </>
+    );
+}
+
+function AddActivityForm() {
+    const { mutate } = useMutation("POST", `${resource}`, [tag]);
+    const tryAdd = new TryAdd({ addFunc: mutate });
+
+    const handleSubmit = async (formData) => {
+        const nonJsonBody = {
+            // Note: mutate() converts body to json automatically - multiple JSON.stringify() calls have really weird effects
+            name: formData.get("name"),
+            description: formData.get("description"),
+        };
+        await tryAdd.runAsync({ body: nonJsonBody });
+    };
+
+    return (
+        <form className="add-activity-form" action={handleSubmit}>
+            <h1>Add new activity</h1>
+            <label htmlFor="name">Name</label>
+            <input type="text" name="name" />
+            <label htmlFor="description">Description</label>
+            <input type="text" name="description" />
+            <button>Done</button>
+        </form>
     );
 }

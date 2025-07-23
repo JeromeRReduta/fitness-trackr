@@ -21,10 +21,19 @@ export function ApiProvider({ children }) {
      * Throws an error if anything goes wrong.
      */
     const request = async (resource, options) => {
+        console.log(
+            "data:",
+            API + resource,
+            "options",
+            options,
+            "headers",
+            headers
+        );
         const response = await fetch(API + resource, {
             ...options,
             headers,
         });
+
         const isJson = /json/.test(response.headers.get("Content-Type"));
         const result = isJson ? await response.json() : undefined;
         if (!response.ok) {
